@@ -52,16 +52,19 @@ int main()
 
 	//6.等待客户端发送数据，接收数据
 	char buffer[1024] = { 0 };
-	//返回接受的数据的长度
-	int len = recv(clientSocket, buffer , sizeof(buffer), 0);
-	if (len>0)
+	while (true)
 	{
-		printf("客户端接受的数据：%s\n", buffer);
+		//永久的接受数据
+		//返回接受到的数据长度 recv阻塞等待接受数据
+		int len = recv(clientSocket, buffer, sizeof(buffer), 0);
+		if (len > 0)
+		{
+			printf("服务器接受的数据：%s\n", buffer);
 
+		}
 	}
-	//7.给客户端发送数据
-	send(clientSocket, "Hello, Client!", strlen("Hello, Client!"), 0);
-
+	closesocket(clientSocket);
+	closesocket(serverSocket);
 	//清除网络环境
 	WSACleanup();
 	return 0;

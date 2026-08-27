@@ -34,15 +34,21 @@ int main()
 	//给服务器发送数据
 	char buffer[1024] = "hello world";
 	char recvBuffer[1024] = { 0 };
-	send(serverSocket, buffer, strlen(buffer), 0);
-
-	//等待接受服务器返回的数据
-	int len = recv(serverSocket, recvBuffer, sizeof(recvBuffer), 0);
-	if (len>0)
+	while (true)
 	{
-		printf("客户端接受的数据：%s\n", recvBuffer);
+		printf("请输入要发送的数据：");
+		//接受用户输入,stdin标准输入
+		fgets(buffer,1024,stdin);
+		send(serverSocket,buffer,strlen(buffer),0);
+		//等待接受服务器返回的数据
+		int len = recv(serverSocket, recvBuffer, sizeof(recvBuffer), 0);
+		if (len > 0)
+		{
+			printf("客户端接受的数据：%s\n", recvBuffer);
+		}
 	}
 
+	closesocket(serverSocket);
 	WSACleanup();
 	return 0;	
 }
