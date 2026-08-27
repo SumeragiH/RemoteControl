@@ -4,6 +4,26 @@
 
 #pragma comment(lib,"ws2_32.lib") //加载 ws2_32.dll
 
+#pragma pack(push,1) //设置结构体对齐方式为1字节对齐
+struct PacketHeader
+{
+	int magic;//4字节的包头
+	int cmd;//4字节的命令字
+	int body_len;//4字节的包体长度
+
+
+};
+
+#pragma pack(pop)
+struct Packet
+{
+	PacketHeader header;//包头
+	char body[];//包数据，不固定长度
+
+};
+
+Packet* ParsePacket(char* buffer, int len);
+
 //程序入口函数：程序从这里开始
 int main()
 {
@@ -57,11 +77,20 @@ int main()
 		//永久的接受数据
 		//返回接受到的数据长度 recv阻塞等待接受数据
 		int len = recv(clientSocket, buffer, sizeof(buffer), 0);
+		//依照协议解析数据
+		Packet* packet = ParsePacket(buffer, len);
+
+
 		if (len > 0)
 		{
-			printf("服务器接受的数据：%s\n", buffer);
-
+			printf("服务器接受的数据：%s\n", packet->body);
+			printf("-----------------------------\n");
 		}
+
+
+		//返回值是堆上的内存，使用完后要释放
+		free(packet);	
+		Sleep(1000);
 	}
 	closesocket(clientSocket);
 	closesocket(serverSocket);
@@ -70,3 +99,39 @@ int main()
 	return 0;
 }
  
+Packet* ParsePacket(char* buffer,int len) 
+{
+	//第一个char地址转为int指针，因为转为int*，一次取4个字节，判断包头是否正确
+
+	Packet pck;
+	Packet* rPck;
+	//四字节的包头，四字节的命令字，四字节的包体长度+包体数据
+	int i = 0;
+	for (; i < len; i++)
+	{
+		//判断包头是否正确
+		if (*(int*)(buffer+i) == 0x12345678)
+		{
+			pck.header.magic = *(int*)(buffer + i);
+			i += 4;
+			break;
+		}
+	}
+	pck.header.cmd = *(int*)(buffer + i);
+	i += 4;
+
+	pck.header.body_len = *(int*)(buffer + i);
+	i += 4;
+
+	//获取包体数据
+	if (pck.header.body_len > 0)
+	{
+		rPck = (Packet*)malloc(sizeof(PacketHeader) + pck.header.body_len);	//分配内存
+		//拷贝数据(包体，包头)
+		memcpy(rPck->body, buffer + i, pck.header.body_len);
+		memcpy(&rPck->header, &pck.header, sizeof(PacketHeader));
+
+		return rPck;
+	}
+	return nullptr;
+}
